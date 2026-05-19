@@ -1,0 +1,40 @@
+trigger:
+- main
+
+variables:
+  imageName: 'poc34-app'
+
+stages:
+- stage: Build
+  displayName: Build and Push Image
+  jobs:
+  - job: Build
+    pool:
+      vmImage: ubuntu-latest
+
+    steps:
+    - task: Docker@2
+      displayName: Build and Push to ACR
+      inputs:
+        containerRegistry: 'ACR-SERVICE-CONNECTION'
+        repository: '$(imageName)'
+        command: 'buildAndPush'
+        Dockerfile: '**/Dockerfile'
+        tags: |
+          latest
+
+- stage: Deploy
+  displayName: Deploy to Azure Web App
+  dependsOn: Build
+  jobs:
+  - job: Deploy
+    pool:
+      vmImage: ubuntu-latest
+
+    steps:
+    - task: AzureWebAppContainer@1
+      displayName: Deploy to Web App
+      inputs:
+        azureSubscription: '<YOUR-AZURE-SERVICE-CONNECTION>'
+        appName: 'poc34-webapp-123'
+        containers: 'poc34acr123.azurecr.io/poc34-app:latest'
